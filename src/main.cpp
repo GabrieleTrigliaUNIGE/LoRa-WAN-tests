@@ -3,11 +3,9 @@
 
 LoRaModem modem;
 
-// PROVA PUSH 
-
 // valori generati dal Built-in Network Server del gateway
-String appEui = "0cb18b9ee0d81424"; // App EUI (16 caratteri)
-String appKey = "5b1762235cb448bf5f3d5b2a3b029426"; // App Key (32 caratteri)
+String appEui = "0000000000000000"; // App EUI (16 caratteri)
+String appKey = "8248d771da1b2ae23def6d7d7526e35c"; // App Key (32 caratteri)
 
 void setup() {
   Serial.begin(115200);
@@ -44,6 +42,9 @@ void loop() {
   
   modem.beginPacket();
   modem.print("Ciao Gateway!");
+  // timestamp
+  Serial.print(" Timestamp: ");
+  Serial.println(millis()/1000);
 
   int err = modem.endPacket(true);
   
