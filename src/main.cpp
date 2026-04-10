@@ -3,6 +3,8 @@
 
 LoRaModem modem;
 
+// PROVA PUSH 
+
 // valori generati dal Built-in Network Server del gateway
 String appEui = "0cb18b9ee0d81424"; // App EUI (16 caratteri)
 String appKey = "5b1762235cb448bf5f3d5b2a3b029426"; // App Key (32 caratteri)
