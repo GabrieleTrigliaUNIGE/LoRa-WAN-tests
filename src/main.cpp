@@ -38,24 +38,52 @@ void setup() {
 }
 
 void loop() {
-  Serial.println("Invio pacchetto di test in corso...");
+  Serial.println("-----------------------------------");
+  Serial.println("Invio pacchetto (Uplink) in corso...");
   
   modem.beginPacket();
   modem.print("Ciao Gateway!");
+  
   // timestamp
-  Serial.print(" Timestamp: ");
+  Serial.print("Timestamp invio [s]: ");
   Serial.println(millis()/1000);
 
+  // Invia il pacchetto richiedendo una conferma (ACK)
   int err = modem.endPacket(true);
   
   if (err > 0) {
-    Serial.println("Messaggio inviato correttamente!");
+    Serial.println("Conferma (ACK) ricevuta dal server!");
+    
+    // --- NUOVA SEZIONE: LETTURA DELLA RISPOSTA (DOWNLINK) ---
+    // Controlliamo se il gateway ha approfittato della conferma 
+    // per inviarci dei dati o dei comandi.
+    if (modem.available()) {
+      Serial.print("Il gateway ha allegato un messaggio: ");
+      String rispostaGateway = "";
+      
+      // Legge tutti i byte in arrivo
+      while (modem.available()) {
+        rispostaGateway += (char)modem.read();
+      }
+      
+      Serial.println(rispostaGateway);
+      
+      // Qui l'Arduino "risponde" al comando eseguendo un'azione locale
+      // Esempio: se dal gateway invii il testo "ON"
+      if (rispostaGateway == "ON") {
+         Serial.println("Azione: Accendo un rele/LED!");
+         // digitalWrite(LED_BUILTIN, HIGH);
+      }
+      
+    } else {
+      Serial.println("Nessun messaggio testuale dal gateway (solo l'ACK di conferma).");
+    }
+    // --------------------------------------------------------
+
   } else {
-    Serial.println("Errore nell'invio del messaggio.");
+    Serial.println("Errore di invio o nessuna conferma (ACK) ricevuta in tempo.");
   }
 
-  // Pausa di 60 secondi prima del prossimo invio.
-  // IMPORTANTE: Le reti LoRaWAN hanno limiti legali di trasmissione (Duty Cycle).
-  // Non abbassare troppo questo valore o il modulo si bloccherà per protezione.
-  delay(60000); 
+  Serial.println("Attesa di 30 secondi...");
+  delay(30000); 
 }
