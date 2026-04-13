@@ -53,6 +53,8 @@ void loop() {
   
   if (err > 0) {
     Serial.println("Conferma (ACK) ricevuta dal server!");
+
+    delay(500); // Piccola pausa prima di leggere eventuali messaggi in arrivo
     
     // --- NUOVA SEZIONE: LETTURA DELLA RISPOSTA (DOWNLINK) ---
     // Controlliamo se il gateway ha approfittato della conferma 
