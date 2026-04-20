@@ -3,89 +3,69 @@
 
 LoRaModem modem;
 
-// valori generati dal Built-in Network Server del gateway
-String appEui = "0000000000000000"; // App EUI (16 caratteri)
-String appKey = "8248d771da1b2ae23def6d7d7526e35c"; // App Key (32 caratteri)
+// Le tue chiavi OTAA
+String appEui = ""; 
+String appKey = "8248d771da1b2ae23def6d7d7526e35c"; 
 
 void setup() {
   Serial.begin(115200);
-  while (!Serial); // Attende l'apertura del Monitor Seriale
+  while (!Serial);
 
-  Serial.println("Avvio modulo LoRaWAN del MKR WAN 1310...");
+  Serial.println("Avvio modulo LoRaWAN (Modalita' Ricevitore)...");
   
-  // Imposta la frequenza per l'Europa (EU868)
   if (!modem.begin(EU868)) {
-    Serial.println("Errore: impossibile avviare il modulo radio!");
+    Serial.println("Errore modulo radio!");
     while (1) {} 
   };
 
-  Serial.print("Il DevEUI della tua scheda è: ");
-  Serial.println(modem.deviceEUI());
-
-  Serial.println("Tentativo di connessione al Gateway (Join OTAA)...");
-  
+  Serial.println("Connessione OTAA in corso...");
   int connected = modem.joinOTAA(appEui, appKey);
   
   if (!connected) {
-    Serial.println("Connessione fallita. Controlla che le chiavi siano identiche sul Gateway.");
+    Serial.println("Connessione fallita.");
     while (1) {} 
   }
   
-  Serial.println("Connessione al gateway riuscita con successo!");
-  
-  // Imposta la velocità di trasmissione adattiva (ADR)
+  Serial.println("Connesso! In attesa di messaggi dal Gateway...");
   modem.setADR(true);
 }
 
 void loop() {
-  Serial.println("-----------------------------------");
-  Serial.println("Invio pacchetto (Uplink) in corso...");
-  
+  // 1. Inviamo un pacchetto "esca" piccolissimo solo per aprire le finestre di ricezione.
+  // Mandiamo un singolo byte (es. il carattere di un punto) per consumare pochissima banda.
   modem.beginPacket();
-  modem.print("Ciao Gateway!");
+  modem.print("."); 
   
-  // timestamp
-  Serial.print("Timestamp invio [s]: ");
-  Serial.println(millis()/1000);
-
-  // Invia il pacchetto richiedendo una conferma (ACK)
+  // Chiediamo la conferma (true) così il gateway ci risponderà sicuramente
   int err = modem.endPacket(true);
-  
-  if (err > 0) {
-    Serial.println("Conferma (ACK) ricevuta dal server!");
 
-    delay(500); // Piccola pausa prima di leggere eventuali messaggi in arrivo
+  if (err > 0) {
+    // 2. Il pacchetto è andato. Ora aspettiamo mezzo secondo che il buffer si riempia
+    delay(500); 
     
-    // --- NUOVA SEZIONE: LETTURA DELLA RISPOSTA (DOWNLINK) ---
-    // Controlliamo se il gateway ha approfittato della conferma 
-    // per inviarci dei dati o dei comandi.
+    // 3. Controlliamo se il gateway ci ha inviato un messaggio (Downlink)
     if (modem.available()) {
-      Serial.print("Il gateway ha allegato un messaggio: ");
-      String rispostaGateway = "";
+      Serial.println("\n>>> NUOVO MESSAGGIO RICEVUTO! <<<");
+      Serial.print("Testo: ");
       
-      // Legge tutti i byte in arrivo
+      String messaggioInArrivo = "";
       while (modem.available()) {
-        rispostaGateway += (char)modem.read();
+        messaggioInArrivo += (char)modem.read();
       }
       
-      Serial.println(rispostaGateway);
-      
-      // Qui l'Arduino "risponde" al comando eseguendo un'azione locale
-      // Esempio: se dal gateway invii il testo "ON"
-      if (rispostaGateway == "ON") {
-         Serial.println("Azione: Accendo un rele/LED!");
-         // digitalWrite(LED_BUILTIN, HIGH);
-      }
+      // Stampiamo il messaggio ricevuto
+      Serial.println(messaggioInArrivo);
+      Serial.println("-----------------------------------");
       
     } else {
-      Serial.println("Nessun messaggio testuale dal gateway (solo l'ACK di conferma).");
+      // Se non c'è niente, stampiamo solo un puntino per far capire che sta lavorando
+      Serial.print("."); 
     }
-    // --------------------------------------------------------
-
   } else {
-    Serial.println("Errore di invio o nessuna conferma (ACK) ricevuta in tempo.");
+    Serial.println("Errore di rete. Gateway non raggiungibile.");
   }
 
-  Serial.println("Attesa di 30 secondi...");
+  // 4. Pausa obbligatoria per legge (Duty Cycle).
+  // Mettendo 60 secondi, avrai un ritardo massimo di 1 minuto per ricevere i comandi.
   delay(30000); 
 }
