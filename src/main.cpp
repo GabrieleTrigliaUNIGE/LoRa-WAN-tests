@@ -46,26 +46,37 @@ void loop() {
     // 3. Controlliamo se il gateway ci ha inviato un messaggio (Downlink)
     if (modem.available()) {
       Serial.println("\n>>> NUOVO MESSAGGIO RICEVUTO! <<<");
-      Serial.print("Testo: ");
+      Serial.print("Payload (in HEX): ");
       
-      String messaggioInArrivo = "";
+      // Legge e stampa tutti i byte in arrivo uno per uno
       while (modem.available()) {
-        messaggioInArrivo += (char)modem.read();
+        byte byteRicevuto = modem.read();
+        
+        // Se il numero è minore di 16 (cioè da 0 a F), aggiungiamo uno '0' 
+        // davanti per leggerlo meglio (es. "01" invece di "1")
+        if (byteRicevuto < 0x10) {
+          Serial.print("0");
+        }
+        
+        // Stampiamo il byte in formato Esadecimale (HEX)
+        Serial.print(byteRicevuto, HEX);
+        // Aggiungiamo uno spazio per separare i numeri
+        Serial.print(" "); 
       }
       
-      // Stampiamo il messaggio ricevuto
-      Serial.println(messaggioInArrivo);
+      Serial.println(); // Andiamo a capo alla fine del messaggio
       Serial.println("-----------------------------------");
       
     } else {
       // Se non c'è niente, stampiamo solo un puntino per far capire che sta lavorando
       Serial.print("."); 
     }
+
   } else {
     Serial.println("Errore di rete. Gateway non raggiungibile.");
   }
 
   // 4. Pausa obbligatoria per legge (Duty Cycle).
   // Mettendo 60 secondi, avrai un ritardo massimo di 1 minuto per ricevere i comandi.
-  delay(30000); 
+  delay(60000); 
 }
