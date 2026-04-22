@@ -67,5 +67,5 @@ void loop() {
 
 
   // 4. Pausa obbligatoria per legge (Duty Cycle).
-  delay(60000); 
+  delay(120000); 
 }
