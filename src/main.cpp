@@ -57,5 +57,5 @@ void loop() {
   // Pausa di 60 secondi prima del prossimo invio.
   // IMPORTANTE: Le reti LoRaWAN hanno limiti legali di trasmissione (Duty Cycle).
   // Non abbassare troppo questo valore o il modulo si bloccherà per protezione.
-  delay(60000); 
+  delay(30000); 
 }
