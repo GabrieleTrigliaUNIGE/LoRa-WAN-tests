@@ -31,7 +31,7 @@ void setup() {
 }
 
 void loop() {
-  // 1. Inviamo un pacchetto "esca" piccolissimo solo per aprire le finestre di ricezione.
+  // Inviamo un pacchetto "esca" piccolissimo solo per aprire le finestre di ricezione.
   // Mandiamo un singolo byte (es. il carattere di un punto) per consumare pochissima banda.
   modem.beginPacket();
   modem.print("."); 
@@ -40,43 +40,32 @@ void loop() {
   int err = modem.endPacket(true);
 
   if (err > 0) {
-    // 2. Il pacchetto è andato. Ora aspettiamo mezzo secondo che il buffer si riempia
-    delay(500); 
     
-    // 3. Controlliamo se il gateway ci ha inviato un messaggio (Downlink)
+    int portaRicevuta = modem.getDownlinkPort();
+
+    // 3. Ora controlliamo se ci sono dati
     if (modem.available()) {
       Serial.println("\n>>> NUOVO MESSAGGIO RICEVUTO! <<<");
-      Serial.print("Payload (in HEX): ");
+      Serial.print("Ricevuto sulla FPort: ");
+      Serial.println(portaRicevuta);
+      Serial.print("Payload (HEX): ");
       
-      // Legge e stampa tutti i byte in arrivo uno per uno
       while (modem.available()) {
         byte byteRicevuto = modem.read();
-        
-        // Se il numero è minore di 16 (cioè da 0 a F), aggiungiamo uno '0' 
-        // davanti per leggerlo meglio (es. "01" invece di "1")
-        if (byteRicevuto < 0x10) {
-          Serial.print("0");
-        }
-        
-        // Stampiamo il byte in formato Esadecimale (HEX)
+        if (byteRicevuto < 0x10) { Serial.print("0"); }
         Serial.print(byteRicevuto, HEX);
-        // Aggiungiamo uno spazio per separare i numeri
         Serial.print(" "); 
       }
       
-      Serial.println(); // Andiamo a capo alla fine del messaggio
-      Serial.println("-----------------------------------");
-      
+      Serial.println("\n-----------------------------------");
     } else {
-      // Se non c'è niente, stampiamo solo un puntino per far capire che sta lavorando
-      Serial.print("."); 
+      Serial.print("."); // Indica che l'Uplink è andato a buon fine ma non c'erano allegati
     }
-
   } else {
-    Serial.println("Errore di rete. Gateway non raggiungibile.");
+    Serial.println("\n\tErrore: Pacchetto non inviato (Duty Cycle o rete assente)\n");
   }
 
+
   // 4. Pausa obbligatoria per legge (Duty Cycle).
-  // Mettendo 60 secondi, avrai un ritardo massimo di 1 minuto per ricevere i comandi.
   delay(60000); 
 }
