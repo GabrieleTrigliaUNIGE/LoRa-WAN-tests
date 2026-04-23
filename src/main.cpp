@@ -3,63 +3,64 @@
 
 LoRaModem modem;
 
-// Le tue chiavi OTAA
 String appEui = ""; 
 String appKey = "8248d771da1b2ae23def6d7d7526e35c"; 
 
-// ---> CAMBIA QUESTO NUMERO PER I TUOI TEST <---
-const int DIMENSIONE_PAYLOAD = 60; 
-
 byte pacchettoDaInviare[250];
+int contatorePacchetti = 0;
 
 void setup() {
   Serial.begin(115200);
   while (!Serial);
 
-  Serial.println("Avvio modulo LoRaWAN (Modalita' Trasmettitore)...");
-  
-  if (!modem.begin(EU868)) {
-    Serial.println("Errore modulo radio!");
-    while (1) {} 
-  };
+  Serial.println("Avvio modulo LoRaWAN...");
+  if (!modem.begin(EU868)) { while (1) {} };
 
   Serial.println("Connessione OTAA in corso...");
-  int connected = modem.joinOTAA(appEui, appKey);
-  
-  if (!connected) {
-    Serial.println("Connessione fallita.");
-    while (1) {} 
-  }
+  if (!modem.joinOTAA(appEui, appKey)) { while (1) {} }
   
   Serial.println("Connesso!");
-  modem.setADR(true); // Attiviamo l'Adaptive Data Rate
-
-  // Prepariamo il pacchetto pesante (riempie l'array con 1, 2, 3, 4...)
-  for (int i = 0; i < DIMENSIONE_PAYLOAD; i++) {
-    pacchettoDaInviare[i] = i + 1;
-  }
+  
+  // 1. Lasciamo l'ADR ACCESO. Facciamo decidere alla rete.
+  modem.setADR(true); 
 }
 
 void loop() {
-  Serial.print("\nSto provando a inviare ");
-  Serial.print(DIMENSIONE_PAYLOAD);
+  contatorePacchetti++;
+  
+  
+  // Per i primi 10 pacchetti inviamo solo 10 byte (il "rodaggio").
+  // Dal 11esimo pacchetto in poi, passiamo a 100 byte!
+  int payloadAttuale = 50; 
+  if (contatorePacchetti > 7) {
+    payloadAttuale = 64;
+  }
+
+  Serial.print("\nPacchetto n. ");
+  Serial.print(contatorePacchetti);
+  Serial.print(" | Invio ");
+  Serial.print(payloadAttuale);
   Serial.println(" Byte...");
 
+  // Riempiamo il pacchetto (es. 1, 2, 3...)
+  for (int i = 0; i < payloadAttuale; i++) {
+    pacchettoDaInviare[i] = i + 1;
+  }
+
   modem.beginPacket();
-  modem.write(pacchettoDaInviare, DIMENSIONE_PAYLOAD); 
+  modem.write(pacchettoDaInviare, payloadAttuale); 
   
-  // Usiamo 'true' per chiedere la conferma di ricezione al gateway
+  // Usiamo 'true' per la conferma
   int err = modem.endPacket(true);
 
   if (err > 0) {
-    Serial.println(">>> SUCCESSO! Il Gateway ha ricevuto il pacchetto! <<<");
+    Serial.println(">>> TRASMESSO! <<<");
   } else {
-    Serial.println("ERRORE. Pacchetto respinto (o per limite hardware o per Duty Cycle).");
+    Serial.println("ERRORE. Rifiutato.");
   }
 
-  // ATTENZIONE AL DUTY CYCLE!
-  // Se invii 222 byte, il tempo in aria è lunghissimo. 
-  // Dobbiamo far riposare la scheda per ALMENO 2 minuti per non bloccare il Murata.
-  Serial.println("Pausa di raffreddamento Duty Cycle (2 minuti)...");
-  delay(120000); 
+  // Pausa di 30 secondi. Sufficiente per 10 byte a SF12 senza violare il Duty Cycle
+  Serial.println("Attesa di 30 secondi...");
+  delay(30000); 
 }
+
